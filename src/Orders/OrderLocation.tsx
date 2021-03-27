@@ -1,16 +1,67 @@
+import { useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import AsyncSelect from 'react-select/async'
+import { fetchLocalMapBox } from '../service/api'
+import { OrderLocationData } from './interfaces'
 import './styles.css'
 
-const position = {
-  lat: 51.505,
-  lng: -0.09
+const initialPosition = {
+  lat: -23.5614783,
+  lng: -46.5628547
 }
 
 // https://react-leaflet.js.org/docs/start-installation
 // npm install react react-dom leaflet react-leaflet
 // npm install -D @types/leaflet
 
-export function OrderLocation() {
+interface Place {
+  label?: string
+  value?: string 
+  position: {
+    lat: number
+    lng: number
+  }
+}
+
+interface Props {
+  onChangeLocation: (location: OrderLocationData) => void
+}
+
+export function OrderLocation({ onChangeLocation }: Props) {
+  const [address, setAddress] = useState<Place>({
+    position: initialPosition
+  })
+
+  function options (inputValue: string, callback: (places: Place[]) => void) { 
+    loadOptions(inputValue, callback)
+  }
+
+  const loadOptions = async (inputValue: string, callback: (places: Place[]) => void) => {
+    const response = await fetchLocalMapBox(inputValue);
+  
+    const places = response.data.features.map((item: any) => {
+      return ({
+        label: item.place_name,
+        value: item.place_name,
+        position: {
+          lat: item.center[1],
+          lng: item.center[0]
+        },
+      });
+    });
+  
+    callback(places);
+  };
+  
+  const handleChangeSelect = (place: Place) => {
+    setAddress(place);
+    onChangeLocation({
+      latitude: place.position.lat,
+      longitude: place.position.lng,
+      address: place.label!
+    });
+  };
+    
   return (
     <div className="order-location-container">
       <div className="order-location-content">
@@ -18,15 +69,27 @@ export function OrderLocation() {
           Selecione onde o pedido deve ser entregue:
         </h3>
         <div className="filter-container">
+          <AsyncSelect 
+            placeholder="Digite um endereço para entregar o pedido"
+            className="filter"
+            loadOptions={options}
+            onChange={value => handleChangeSelect(value as Place)}
+          />
         </div>
-        <MapContainer center={position} zoom={13} scrollWheelZoom={false}>
+        
+        <MapContainer 
+          center={address.position} 
+          zoom={13} 
+          scrollWheelZoom={true}
+          key={address.position.lat}
+        >
           <TileLayer
             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <Marker position={position}>
+          <Marker position={address.position}>
             <Popup>
-              A pretty CSS3 popup. <br /> Easily customizable.
+              {address.label}
             </Popup>
           </Marker>
         </MapContainer>
