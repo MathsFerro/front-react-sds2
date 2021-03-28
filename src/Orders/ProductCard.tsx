@@ -1,23 +1,19 @@
+import { formatPrice } from './helpers'
 import { Product } from './interfaces'
 
 interface ProductCardProps {
   product: Product
+  onSelectProduct: (product: Product) => void
+  isSelected: boolean
 }
 
-// Usando API internacional (Intl) para formatar o preço
-function formatPrice(price: number) {
-  const formatter = new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2 // padrão 
-  })
 
-  return formatter.format(price)
-}
-
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, onSelectProduct, isSelected }: ProductCardProps) {
   return (
-    <div className="order-card-container">
+    <div 
+      className={`order-card-container ${isSelected ? 'selected' : ''}`}
+      onClick={() => onSelectProduct(product)}
+    >
       <h3 className="order-card-title">
         {product.name}
       </h3>
